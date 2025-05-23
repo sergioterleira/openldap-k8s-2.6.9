@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install -y \
     ldap-utils \
     ca-certificates \
     pkg-config \
-    groff   # <--- aquí se añade soelim
+    groff  # soelim
 
 # Descargar y compilar OpenLDAP
 RUN mkdir -p /build && \
@@ -33,13 +33,21 @@ RUN mkdir -p /build && \
     wget https://www.openldap.org/software/download/OpenLDAP/openldap-release/openldap-${OPENLDAP_VERSION}.tgz && \
     tar -xzf openldap-${OPENLDAP_VERSION}.tgz && \
     cd openldap-${OPENLDAP_VERSION} && \
-    ./configure --prefix=/usr/local/openldap --with-tls=openssl --with-cyrus-sasl --enable-debug --enable-slapd --enable-modules --enable-overlays && \
+    ./configure --prefix=/usr/local/openldap \
+        --with-tls=openssl \
+        --with-cyrus-sasl \
+        --enable-debug \
+        --enable-slapd \
+        --enable-modules \
+        --enable-overlays && \
     make -j$(nproc) && \
     make install
 
 ENV PATH="/usr/local/openldap/bin:/usr/local/openldap/sbin:$PATH"
 
-VOLUME ["/etc/openldap", "/var/lib/ldap"]
+# Directorios persistentes
+VOLUME ["/etc/openldap/slapd.d", "/var/lib/ldap"]
 
-CMD ["slapd", "-d", "32768", "-h", "ldap:/// ldaps:///"]
+# Inicio en modo slapd.d
+CMD ["slapd", "-F", "/etc/openldap/slapd.d", "-h", "ldap:/// ldaps:///", "-d", "256"]
 
